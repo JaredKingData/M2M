@@ -1,0 +1,109 @@
+Overview of directory structure and functions
+cd ~
+ls
+cd Documents
+echo "my_string"
+echo "my_string" > my_file.txt
+ls
+ls -lh
+
+Creating, moving, removing directories
+mkdir my_directory
+ls
+cd my_directory
+realpath .
+cd ..
+ls
+rmdir my_directory
+ls
+
+hidden files: ls -a
+symbolic links: ln -s
+
+Introduce them to the data
+
+Creating, reading, manipulating text files
+Creating text files
+touch this_file.txt
+ls
+rm this_file.txt
+echo "first_string" > this_file.txt
+cat this_file.txt
+echo "second_string" >> this_file.txt
+cat this_file.txt
+cp this_file.txt ./copy_file.txt
+cat copy_file.txt
+rm this_file.txt copy_file.txt
+
+Reading text files
+cat annotated_neural_peaks.txt
+# Oh no too long!
+head annotated_neural_peaks.txt
+head -30 annotated_neural_peaks.txt
+tail -30 annotated_neural_peaks.txt
+less annotated_neural_peaks.txt
+# How many words are on in our peaks file?
+wc annotated_neural_peaks.txt
+# How many peaks are in our file?
+wc -l annotated_neural_peaks.txt
+
+Extracting information from and manipulating text files
+nano annotated_neural_peaks.txt
+# removing the command from the file
+sed 's/chr/chromosome/g' annotated_neural_peaks.txt | head
+
+# cut
+cut -f16 annotated_neural_peaks.txt | head
+cut -f16 annotated_neural_peaks.txt | sort
+sort -k2 annotated_neural_peaks.txt | head
+
+# What peaks are on chromosome 3?
+grep 'chr3' annotated_neural_peaks.txt | head
+# What peaks are associated with the gene ZFHX3?
+grep 'ZFHX3' annotated_neural_peaks.txt | wc -l
+grep -c 'ZFHX3' annotated_neural_peaks.txt
+# How many peaks are not associated with protein-coding genes?
+grep -v 'protein-coding' annotated_neural_peaks.txt | wc -l
+# What peaks are associated with the promoter of a gene on chromosome 8?
+grep -e 'chr8' -e 'promoter-TSS' annotated_neural_peaks.txt | wc -l
+
+# How many peaks are associated with each chromosome?
+cut -f2 annotated_neural_peaks.txt | sort | uniq
+cut -f2 annotated_neural_peaks.txt | sort | uniq -c
+cut -f2 annotated_neural_peaks.txt | sort | uniq -c | grep 'chr'
+
+# How many peaks are associated with each type of region in the genome
+cut -f8 annotated_neural_peaks.txt | sort | uniq -c
+cut -f8 annotated_neural_peaks.txt | cut -f1 -d" " | sort | uniq -c
+cut -f8 annotated_neural_peaks.txt | cut -f1 -d" " | sort | uniq -c | sort -k1r
+
+Awk
+# Filter to chromosome 3 peaks and then arrange by start position
+awk -F '\t' '$2 == "chr3"' annotated_neural_peaks.txt | head
+awk -F '\t' '$2 == "chr3"' annotated_neural_peaks.txt | sort -k3n | head
+
+# How many promoter peaks are on each chromosome?
+awk -F '\t' '$8 ~ "promoter-TSS"' annotated_neural_peaks.txt | cut -f2 | sort | uniq -c
+
+# Extract the IDs of the top 100 largest peaks
+cut -f1-4 annotated_neural_peaks.txt | awk -F "\t" '{OFS="\t"; $5=$4-$3; print $0}' | sort -k5nr | head -100 | cut -f1 > top_100_largest_peaks.txt
+
+Bash scripting
+
+############################################################################################
+#!/bin/bash
+
+# My goal: create separate files for peaks belonging to each region of the genome
+
+# Extract all unique regional annotations for peaks
+cut -f8 annotated_neural_peaks.txt | cut -f1 -d " " | sort | uniq | grep -v 'NA' | grep -v 'Annotation' > regional_annotations.txt
+echo "Done extracting regional_annotations"
+
+# Read the file each regional annotation type in the regional_annotations file
+while IFS= read -r line; do
+	awk -F "\t" -v line=$line '$8 ~ line' annotated_neural_peaks.txt > annotated_neural_${line}_peaks.txt
+done < regional_annotations.txt
+
+# Print line number for all generated files
+wc -l *_peaks.txt
+
