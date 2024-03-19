@@ -1,0 +1,60 @@
+Navigating the Directory Structure in McCleary
+ssh net_id@mccleary.ycrc.yale.edu
+ls -lh ~
+# Explanation of the project and palmer_scratch directory in home directory
+ls -a 
+# Reveal the presence of hidden files and directories
+nano .bashrc
+# Explanation of the contents of the .bashrc file
+alias ll=’ls -lh –color=auto’
+# Explanation of aliases
+ll ~
+# Explanation of symbolic links to the project and palmer_scratch directories
+
+Submitting Jobs to McCleary
+salloc -t 2:00:00 –mem=8G -p devel
+# Allocating 8G of memory on a development node for 2 hours
+squeue –me 
+# Checking the status of occupied cores 
+cd project
+nano my_sbatch_script.sh
+—------------------------------------------------------------------------------------------------------------------
+#!/bin/bash
+
+#SBATCH –time=02:00:00
+#SBATCH –nodes=1
+#SBATCH –ntasks=15
+#SBATCH –partition=day
+#SBATCH –output=my_script.log
+#SBATCH –mail-type=END,FAIL
+#SBATCH –mem=225GB
+
+for i in {1..10}
+do 
+	echo “This is number $i”
+done 
+—------------------------------------------------------------------------------------------------------------------
+sbatch my_sbatch_script.sh
+squeue –me
+# Quickly to show the priority queue on the squeue output and identify the job ID of sbatch
+scancel *job_id*
+# Cancel the running sbatch job
+squeue –me
+
+Parallelizing Your Bioinformatics Pipelines
+https://docs.ycrc.yale.edu/clusters-at-yale/job-scheduling/dsq/
+
+nano dsq_job_file.txt
+—------------------------------------------------------------------------------------------------------------------
+for i in {1..5}; do echo “This is number $i”; done
+for i in {6..10}; do echo “This is number $i”; done
+for i in {11..15}; do echo “This is number $i”; done
+for i in {16..20}; do echo “This is number $i”; done
+—------------------------------------------------------------------------------------------------------------------
+
+module load dSQ
+# Load in the dSQ module from the cluster
+dsq –job-file=dsq_job_file.txt –ntasks=2 –partition=day –time=02:00:00
+# Run each line of job file in parallel, with 2 cores on the day partition for 2 hours each
+squeue –me
+# Notice that all four jobs are queued at once
